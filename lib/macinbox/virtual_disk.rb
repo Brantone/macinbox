@@ -69,12 +69,14 @@ module Macinbox
       max_attempts = 5
       for attempt in 1..max_attempts
         begin
-          Logger.info "Detaching the image..." if @debug
+          Logger.info "Detaching the image (#{@disk_device})..." if @debug
           Task.run %W[ /usr/bin/hdiutil detach #{@disk_device} ] + @quiet_flag
           unset_devices
           break
         rescue Macinbox::Error => error
-          raise if attempt == max_attempts
+          if attempt == max_attempts
+            eject
+          end
           Logger.info "#{error.message}. Sleeping and retrying..." if @debug
           sleep 15
         end
@@ -82,6 +84,7 @@ module Macinbox
     end
 
     def eject
+      Logger.info "Ejecting the image (#{@disk_device})..." if @debug
       Task.run %W[ /usr/sbin/diskutil eject #{@disk_device} ] + @task_opts
       unset_devices
     end
